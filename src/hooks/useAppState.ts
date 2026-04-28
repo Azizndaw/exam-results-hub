@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_ITEMS, type AppState } from "@/lib/checklist";
 
-const STORAGE_KEY = "examtrack:checklist:v1";
+const STORAGE_KEY = "examtrack:checklist:v2";
 
 function defaultState(): AppState {
   return { students: [], items: DEFAULT_ITEMS, records: {} };
