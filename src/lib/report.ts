@@ -1,10 +1,10 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
+  CATEGORIES,
   formatDateFR,
   getDayStats,
   type AppState,
-  type ChecklistItem,
 } from "./checklist";
 
 export function exportDailyPDF(state: AppState, date: string) {
@@ -22,27 +22,45 @@ export function exportDailyPDF(state: AppState, date: string) {
     30,
   );
 
-  const items: ChecklistItem[] = state.items;
-  const head = [["Élève", "École", ...items.map((i) => i.label), "Score"]];
-  const body = state.students.map((st) => {
-    const r = dayRec[st.id] || {};
-    const checks = items.map((it) => (r[it.id] ? "✓" : "—"));
-    const score = items.filter((it) => r[it.id]).length;
-    return [
-      st.fullName || "—",
-      st.school || "—",
-      ...checks,
-      `${score}/${items.length}`,
-    ];
-  });
+  let cursorY = 36;
 
-  autoTable(doc, {
-    startY: 36,
-    head,
-    body,
-    headStyles: { fillColor: [30, 58, 95], fontSize: 9 },
-    styles: { fontSize: 9, halign: "center" },
-    columnStyles: { 0: { halign: "left" }, 1: { halign: "left" } },
+  CATEGORIES.forEach((cat) => {
+    const items = state.items.filter((i) => i.category === cat);
+    if (items.length === 0) return;
+
+    doc.setFontSize(12);
+    doc.setTextColor(30, 58, 95);
+    doc.text(cat, 14, cursorY);
+    doc.setTextColor(0, 0, 0);
+
+    const head = [["Élève", "École", ...items.map((i) => i.label), "Score"]];
+    const body = state.students.map((st) => {
+      const r = dayRec[st.id] || {};
+      const checks = items.map((it) => (r[it.id] ? "✓" : "—"));
+      const score = items.filter((it) => r[it.id]).length;
+      return [
+        st.fullName || "—",
+        st.school || "—",
+        ...checks,
+        `${score}/${items.length}`,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: cursorY + 3,
+      head,
+      body,
+      headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
+      styles: { fontSize: 8, halign: "center", cellPadding: 1.5 },
+      columnStyles: { 0: { halign: "left" }, 1: { halign: "left" } },
+    });
+
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
+    if (cursorY > 180) {
+      doc.addPage();
+      cursorY = 20;
+    }
   });
 
   doc.save(`Rapport_${date}.pdf`);
