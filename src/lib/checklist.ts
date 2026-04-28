@@ -1,7 +1,25 @@
+export type ChecklistCategory =
+  | "Identité & Présence"
+  | "Salle & Installation"
+  | "Matériel & Documents"
+  | "Surveillance"
+  | "Déroulement"
+  | "Fin d'épreuve";
+
 export interface ChecklistItem {
   id: string;
   label: string;
+  category: ChecklistCategory;
 }
+
+export const CATEGORIES: ChecklistCategory[] = [
+  "Identité & Présence",
+  "Salle & Installation",
+  "Matériel & Documents",
+  "Surveillance",
+  "Déroulement",
+  "Fin d'épreuve",
+];
 
 export interface Student {
   id: string;
@@ -25,12 +43,48 @@ export interface AppState {
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const DEFAULT_ITEMS: ChecklistItem[] = [
-  { id: "present", label: "Présent" },
-  { id: "uniform", label: "Uniforme correct" },
-  { id: "homework", label: "Devoirs faits" },
-  { id: "material", label: "Matériel complet" },
-  { id: "behavior", label: "Bon comportement" },
-  { id: "participation", label: "Participation active" },
+  // Identité & Présence
+  { id: "present", label: "Présent", category: "Identité & Présence" },
+  { id: "id_checked", label: "Pièce d'identité vérifiée", category: "Identité & Présence" },
+  { id: "convocation", label: "Convocation présentée", category: "Identité & Présence" },
+  { id: "signed_in", label: "Émargement signé (entrée)", category: "Identité & Présence" },
+  { id: "uniform", label: "Tenue / uniforme correct", category: "Identité & Présence" },
+
+  // Salle & Installation
+  { id: "table_numbered", label: "Table numérotée attribuée", category: "Salle & Installation" },
+  { id: "seating_plan", label: "Plan de salle respecté", category: "Salle & Installation" },
+  { id: "spacing_ok", label: "Espacement réglementaire respecté", category: "Salle & Installation" },
+  { id: "phone_off", label: "Téléphone éteint et déposé", category: "Salle & Installation" },
+  { id: "bag_stored", label: "Sac / effets personnels rangés", category: "Salle & Installation" },
+
+  // Matériel & Documents
+  { id: "material", label: "Matériel autorisé complet (stylo, règle…)", category: "Matériel & Documents" },
+  { id: "calculator", label: "Calculatrice conforme (si autorisée)", category: "Matériel & Documents" },
+  { id: "subject_received", label: "Sujet d'examen reçu", category: "Matériel & Documents" },
+  { id: "answer_sheet", label: "Copie / feuille d'examen reçue", category: "Matériel & Documents" },
+  { id: "scratch_paper", label: "Brouillon distribué", category: "Matériel & Documents" },
+  { id: "anonymity", label: "En-tête anonymisé correctement rempli", category: "Matériel & Documents" },
+  { id: "numbering", label: "Numéro de table / matricule reporté", category: "Matériel & Documents" },
+
+  // Surveillance
+  { id: "surveillance_assigned", label: "Surveillant assigné à la salle", category: "Surveillance" },
+  { id: "instructions_read", label: "Consignes lues à voix haute", category: "Surveillance" },
+  { id: "id_verified_during", label: "Identité contrôlée pendant l'épreuve", category: "Surveillance" },
+  { id: "no_cheating", label: "Aucune tentative de fraude observée", category: "Surveillance" },
+  { id: "incident_logged", label: "Incident éventuel consigné", category: "Surveillance" },
+
+  // Déroulement
+  { id: "on_time", label: "Arrivé(e) à l'heure", category: "Déroulement" },
+  { id: "start_time", label: "Heure de début respectée", category: "Déroulement" },
+  { id: "behavior", label: "Comportement correct", category: "Déroulement" },
+  { id: "bathroom_logged", label: "Sortie WC consignée (si applicable)", category: "Déroulement" },
+  { id: "extra_sheet", label: "Feuille supplémentaire fournie (si demandée)", category: "Déroulement" },
+
+  // Fin d'épreuve
+  { id: "copy_handed", label: "Copie remise au surveillant", category: "Fin d'épreuve" },
+  { id: "copy_numbered", label: "Copie numérotée et paginée", category: "Fin d'épreuve" },
+  { id: "signed_out", label: "Émargement signé (sortie)", category: "Fin d'épreuve" },
+  { id: "room_clean", label: "Place laissée propre", category: "Fin d'épreuve" },
 ];
 
 export function makeStudent(partial: Partial<Student> = {}): Student {
@@ -46,8 +100,11 @@ export function makeStudent(partial: Partial<Student> = {}): Student {
   };
 }
 
-export function makeItem(label = "Nouvel item"): ChecklistItem {
-  return { id: uid(), label };
+export function makeItem(
+  label = "Nouvel item",
+  category: ChecklistCategory = "Déroulement",
+): ChecklistItem {
+  return { id: uid(), label, category };
 }
 
 export function todayISO(): string {
