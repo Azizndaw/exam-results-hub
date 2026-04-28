@@ -100,26 +100,49 @@ export function DailyChecklist({ state, onChange }: Props) {
         <Stat label="Complétion" value={`${stats.completionRate}%`} accent />
       </Card>
 
-      <Card className="p-4 space-y-3">
+      <Card className="p-4 space-y-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <ListChecks className="h-4 w-4 text-accent" /> Items de la checklist
+          <ListChecks className="h-4 w-4 text-accent" /> Items de la checklist ({state.items.length})
         </div>
-        <div className="flex flex-wrap gap-2">
-          {state.items.map((it) => (
-            <ItemChip
-              key={it.id}
-              item={it}
-              onChange={(label) => updateItem(it.id, label)}
-              onRemove={() => removeItem(it.id)}
-            />
-          ))}
+        <div className="space-y-3">
+          {CATEGORIES.map((cat) => {
+            const items = state.items.filter((i) => i.category === cat);
+            if (items.length === 0) return null;
+            return (
+              <div key={cat}>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  {cat}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((it) => (
+                    <ItemChip
+                      key={it.id}
+                      item={it}
+                      onChange={(label) => updateItem(it.id, label)}
+                      onRemove={() => removeItem(it.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 pt-2 border-t">
+          <select
+            value={newItemCategory}
+            onChange={(e) => setNewItemCategory(e.target.value as ChecklistCategory)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
           <Input
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
-            placeholder="Ajouter un item (ex : Tenue de sport)"
+            placeholder="Ajouter une vérification (ex : Brouillon paraphé)"
             onKeyDown={(e) => e.key === "Enter" && addItem()}
+            className="flex-1 min-w-48"
           />
           <Button onClick={addItem} disabled={!newItem.trim()}>
             <Plus className="h-4 w-4" /> Ajouter
@@ -128,19 +151,41 @@ export function DailyChecklist({ state, onChange }: Props) {
       </Card>
 
       <div className="overflow-x-auto rounded-xl border bg-card">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
+        <table className="w-full text-sm border-collapse">
+          <thead className="bg-secondary/60 text-xs text-muted-foreground">
             <tr>
-              <th className="text-left px-3 py-2 font-medium sticky left-0 bg-secondary/60">
+              <th rowSpan={2} className="text-left px-3 py-2 font-medium sticky left-0 bg-secondary/60 align-bottom border-b">
                 Élève
               </th>
-              {state.items.map((it) => (
-                <th key={it.id} className="px-2 py-2 font-medium text-center min-w-24">
-                  {it.label}
-                </th>
-              ))}
-              <th className="px-2 py-2 font-medium text-center">Score</th>
-              <th className="px-2 py-2"></th>
+              {CATEGORIES.map((cat) => {
+                const count = state.items.filter((i) => i.category === cat).length;
+                if (count === 0) return null;
+                return (
+                  <th
+                    key={cat}
+                    colSpan={count}
+                    className="px-2 py-1.5 font-semibold text-center uppercase tracking-wide text-[10px] border-l border-b text-foreground/80"
+                  >
+                    {cat}
+                  </th>
+                );
+              })}
+              <th rowSpan={2} className="px-2 py-2 font-medium text-center align-bottom border-b border-l">Score</th>
+              <th rowSpan={2} className="px-2 py-2 align-bottom border-b"></th>
+            </tr>
+            <tr>
+              {CATEGORIES.flatMap((cat) =>
+                state.items
+                  .filter((i) => i.category === cat)
+                  .map((it, idx) => (
+                    <th
+                      key={it.id}
+                      className={`px-2 py-2 font-medium text-center min-w-24 border-b ${idx === 0 ? "border-l" : ""}`}
+                    >
+                      <div className="leading-tight">{it.label}</div>
+                    </th>
+                  )),
+              )}
             </tr>
           </thead>
           <tbody>
@@ -148,28 +193,35 @@ export function DailyChecklist({ state, onChange }: Props) {
               const rec = dayRec[st.id] || {};
               const score = state.items.filter((it) => rec[it.id]).length;
               const allChecked = score === state.items.length && state.items.length > 0;
+              const orderedItems = CATEGORIES.flatMap((cat) =>
+                state.items.filter((i) => i.category === cat),
+              );
               return (
                 <tr key={st.id} className="border-t">
                   <td className="px-3 py-2 sticky left-0 bg-card">
                     <div className="font-medium text-foreground">{st.fullName || "—"}</div>
                     <div className="text-xs text-muted-foreground">{st.school}</div>
                   </td>
-                  {state.items.map((it) => (
-                    <td key={it.id} className="px-2 py-2 text-center">
-                      <button
-                        onClick={() => toggle(st.id, it.id)}
-                        className={`h-7 w-7 rounded-md border transition-colors inline-flex items-center justify-center ${
-                          rec[it.id]
-                            ? "bg-success text-success-foreground border-success"
-                            : "bg-background hover:bg-secondary"
-                        }`}
-                        aria-label={`${it.label} pour ${st.fullName}`}
-                      >
-                        {rec[it.id] ? "✓" : ""}
-                      </button>
-                    </td>
-                  ))}
-                  <td className="px-2 py-2 text-center font-semibold">
+                  {orderedItems.map((it, idx) => {
+                    const prev = orderedItems[idx - 1];
+                    const newCat = !prev || prev.category !== it.category;
+                    return (
+                      <td key={it.id} className={`px-2 py-2 text-center ${newCat ? "border-l" : ""}`}>
+                        <button
+                          onClick={() => toggle(st.id, it.id)}
+                          className={`h-7 w-7 rounded-md border transition-colors inline-flex items-center justify-center ${
+                            rec[it.id]
+                              ? "bg-success text-success-foreground border-success"
+                              : "bg-background hover:bg-secondary"
+                          }`}
+                          aria-label={`${it.label} pour ${st.fullName}`}
+                        >
+                          {rec[it.id] ? "✓" : ""}
+                        </button>
+                      </td>
+                    );
+                  })}
+                  <td className="px-2 py-2 text-center font-semibold border-l">
                     {score}/{state.items.length}
                   </td>
                   <td className="px-2 py-2 text-right">
