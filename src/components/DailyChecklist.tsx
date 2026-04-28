@@ -58,7 +58,7 @@ export function DailyChecklist({ state, onChange }: Props) {
 
   function addItem() {
     if (!newItem.trim()) return;
-    onChange({ ...state, items: [...state.items, makeItem(newItem.trim())] });
+    onChange({ ...state, items: [...state.items, makeItem(newItem.trim(), newItemCategory)] });
     setNewItem("");
   }
 
