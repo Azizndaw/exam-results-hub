@@ -100,8 +100,11 @@ export function makeStudent(partial: Partial<Student> = {}): Student {
   };
 }
 
-export function makeItem(label = "Nouvel item"): ChecklistItem {
-  return { id: uid(), label };
+export function makeItem(
+  label = "Nouvel item",
+  category: ChecklistCategory = "Déroulement",
+): ChecklistItem {
+  return { id: uid(), label, category };
 }
 
 export function todayISO(): string {
