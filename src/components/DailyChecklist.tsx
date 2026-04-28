@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import {
+  CATEGORIES,
   formatDateFR,
   getDayStats,
   makeItem,
   todayISO,
   type AppState,
+  type ChecklistCategory,
   type ChecklistItem,
 } from "@/lib/checklist";
 import { exportDailyPDF } from "@/lib/report";
@@ -22,6 +24,7 @@ interface Props {
 export function DailyChecklist({ state, onChange }: Props) {
   const [date, setDate] = useState<string>(todayISO());
   const [newItem, setNewItem] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState<ChecklistCategory>("Déroulement");
 
   const dayRec = state.records[date] || {};
   const stats = getDayStats(state, date);
