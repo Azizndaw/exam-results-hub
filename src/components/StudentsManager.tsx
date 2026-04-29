@@ -4,14 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { makeStudent, type Student } from "@/lib/checklist";
+import type { SchoolClass } from "@/lib/exam";
 import { Trash2, UserPlus, Users } from "lucide-react";
 
 interface Props {
   students: Student[];
+  classes: SchoolClass[];
   onChange: (s: Student[]) => void;
 }
 
-export function StudentsManager({ students, onChange }: Props) {
+export function StudentsManager({ students, classes, onChange }: Props) {
   const [draft, setDraft] = useState<Student>(() => makeStudent());
 
   function addStudent() {
@@ -29,6 +31,9 @@ export function StudentsManager({ students, onChange }: Props) {
     onChange(students.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
 
+  const classLabel = (id?: string | null) =>
+    classes.find((c) => c.id === id)?.name ?? "—";
+
   return (
     <div className="space-y-6">
       <Card className="p-5 space-y-4">
@@ -36,7 +41,7 @@ export function StudentsManager({ students, onChange }: Props) {
           <UserPlus className="h-5 w-5 text-accent" />
           Ajouter un élève
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <div className="space-y-1.5 lg:col-span-2">
             <Label className="text-xs">Nom complet</Label>
             <Input
@@ -69,6 +74,19 @@ export function StudentsManager({ students, onChange }: Props) {
               placeholder="Ex : Lycée Blaise Diagne"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Classe</Label>
+            <select
+              value={draft.classId ?? ""}
+              onChange={(e) => setDraft({ ...draft, classId: e.target.value || null })}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="">— Aucune —</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="flex justify-end">
           <Button onClick={addStudent} disabled={!draft.fullName.trim()}>
@@ -95,6 +113,7 @@ export function StudentsManager({ students, onChange }: Props) {
                   <th className="text-left px-3 py-2 font-medium">Naissance</th>
                   <th className="text-left px-3 py-2 font-medium">Lieu</th>
                   <th className="text-left px-3 py-2 font-medium">École</th>
+                  <th className="text-left px-3 py-2 font-medium">Classe</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -129,6 +148,19 @@ export function StudentsManager({ students, onChange }: Props) {
                         onChange={(e) => updateStudent(s.id, { school: e.target.value })}
                         className="h-8 border-transparent hover:border-input"
                       />
+                    </td>
+                    <td className="px-2 py-1">
+                      <select
+                        value={s.classId ?? ""}
+                        onChange={(e) => updateStudent(s.id, { classId: e.target.value || null })}
+                        className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+                        title={classLabel(s.classId)}
+                      >
+                        <option value="">—</option>
+                        {classes.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-2 py-1 text-right">
                       <Button
