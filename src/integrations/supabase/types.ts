@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      classes: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          name?: string
+        }
+        Relationships: []
+      }
       daily_records: {
         Row: {
           checks: Json
@@ -70,10 +91,154 @@ export type Database = {
           },
         ]
       }
+      exam_sessions: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          id: string
+          name: string
+          session_date: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          session_date?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          session_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grades: {
+        Row: {
+          id: string
+          score: number | null
+          session_id: string
+          student_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          score?: number | null
+          session_id: string
+          student_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          score?: number | null
+          session_id?: string
+          student_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_checklist_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          label: string
+          position: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+        }
+        Relationships: []
+      }
+      room_checklist_records: {
+        Row: {
+          checks: Json
+          class_id: string | null
+          id: string
+          notes: string
+          record_date: string
+          room_label: string
+          updated_at: string
+        }
+        Insert: {
+          checks?: Json
+          class_id?: string | null
+          id?: string
+          notes?: string
+          record_date: string
+          room_label?: string
+          updated_at?: string
+        }
+        Update: {
+          checks?: Json
+          class_id?: string | null
+          id?: string
+          notes?: string
+          record_date?: string
+          room_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_checklist_records_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           birth_date: string | null
           birth_place: string
+          class_id: string | null
           class_name: string
           created_at: string
           full_name: string
@@ -83,6 +248,7 @@ export type Database = {
         Insert: {
           birth_date?: string | null
           birth_place?: string
+          class_id?: string | null
           class_name?: string
           created_at?: string
           full_name?: string
@@ -92,13 +258,57 @@ export type Database = {
         Update: {
           birth_date?: string | null
           birth_place?: string
+          class_id?: string | null
           class_name?: string
           created_at?: string
           full_name?: string
           id?: string
           school?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          class_id: string
+          coefficient: number
+          created_at: string
+          id: string
+          label: string
+          position: number
+        }
+        Insert: {
+          class_id: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+        }
+        Update: {
+          class_id?: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -28,6 +28,7 @@ export interface Student {
   birthPlace: string;
   school: string;
   className?: string;
+  classId?: string | null;
   createdAt: string;
 }
 

@@ -13,6 +13,7 @@ interface DbStudent {
   birth_place: string;
   school: string;
   class_name: string;
+  class_id: string | null;
   created_at: string;
 }
 interface DbItem {
@@ -34,6 +35,7 @@ const mapStudent = (r: DbStudent): Student => ({
   birthPlace: r.birth_place,
   school: r.school,
   className: r.class_name,
+  classId: r.class_id,
   createdAt: r.created_at,
 });
 
@@ -110,6 +112,7 @@ export function useAppState() {
         birth_place: s.birthPlace,
         school: s.school,
         class_name: s.className ?? "",
+        class_id: s.classId ?? null,
       });
     }
     for (const s of studentUpdates) {
@@ -119,6 +122,7 @@ export function useAppState() {
         birth_place: s.birthPlace,
         school: s.school,
         class_name: s.className ?? "",
+        class_id: s.classId ?? null,
       }).eq("id", s.id);
     }
     if (studentDeletes.length)
