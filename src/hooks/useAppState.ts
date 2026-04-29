@@ -112,6 +112,7 @@ export function useAppState() {
         birth_place: s.birthPlace,
         school: s.school,
         class_name: s.className ?? "",
+        class_id: s.classId ?? null,
       });
     }
     for (const s of studentUpdates) {
@@ -121,6 +122,7 @@ export function useAppState() {
         birth_place: s.birthPlace,
         school: s.school,
         class_name: s.className ?? "",
+        class_id: s.classId ?? null,
       }).eq("id", s.id);
     }
     if (studentDeletes.length)
