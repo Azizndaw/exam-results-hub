@@ -6,6 +6,13 @@ import {
   getDayStats,
   type AppState,
 } from "./checklist";
+import type {
+  ExamSession,
+  Grade,
+  RoomChecklistItem,
+  StudentResult,
+  Subject,
+} from "./exam";
 
 export function exportDailyPDF(state: AppState, date: string) {
   const doc = new jsPDF({ orientation: "landscape" });
