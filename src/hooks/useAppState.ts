@@ -13,6 +13,7 @@ interface DbStudent {
   birth_place: string;
   school: string;
   class_name: string;
+  class_id: string | null;
   created_at: string;
 }
 interface DbItem {
@@ -34,6 +35,7 @@ const mapStudent = (r: DbStudent): Student => ({
   birthPlace: r.birth_place,
   school: r.school,
   className: r.class_name,
+  classId: r.class_id,
   createdAt: r.created_at,
 });
 
