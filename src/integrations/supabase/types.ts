@@ -14,7 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          label: string
+          position: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+        }
+        Relationships: []
+      }
+      daily_records: {
+        Row: {
+          checks: Json
+          id: string
+          record_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          checks?: Json
+          id?: string
+          record_date: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          checks?: Json
+          id?: string
+          record_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          birth_date: string | null
+          birth_place: string
+          class_name: string
+          created_at: string
+          full_name: string
+          id: string
+          school: string
+        }
+        Insert: {
+          birth_date?: string | null
+          birth_place?: string
+          class_name?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          school?: string
+        }
+        Update: {
+          birth_date?: string | null
+          birth_place?: string
+          class_name?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          school?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
