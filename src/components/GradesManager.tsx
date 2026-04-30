@@ -92,6 +92,9 @@ export function GradesManager({ students }: Props) {
 
   return (
     <div className="space-y-6">
+      <Card className="p-4 bg-secondary/30 text-sm text-muted-foreground">
+        <strong className="text-foreground">Comment ça marche :</strong> 1) Crée une classe · 2) Ajoute (ou pré-remplis) ses matières · 3) Crée une session d'examen blanc · 4) Saisis les notes /20. Moyennes, rangs et mentions sont calculés automatiquement.
+      </Card>
       {/* CLASSES */}
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2 font-semibold">
