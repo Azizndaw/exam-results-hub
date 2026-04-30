@@ -64,6 +64,8 @@ export function useExamData() {
     setHydrated(true);
   }, []);
 
+  // expose hydrated separately for guards
+
   useEffect(() => {
     reload();
     const ch = supabase
