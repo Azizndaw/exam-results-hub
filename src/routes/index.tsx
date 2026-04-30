@@ -41,10 +41,16 @@ type Tab = "dashboard" | "students" | "checklist" | "grades" | "room";
 
 function Index() {
   const { state, setState, reset, hydrated } = useAppState();
-  const { data: examData } = useExamData();
+  const { data: examData, hydrated: examHydrated } = useExamData();
   const [tab, setTab] = useState<Tab>("dashboard");
 
-  if (!hydrated) return <div className="min-h-screen bg-background" />;
+  if (!hydrated || !examHydrated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-sm text-muted-foreground">
+        Chargement des données…
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background">
