@@ -52,6 +52,12 @@ export function RoomChecklist() {
 
   return (
     <div className="space-y-5">
+      <Card className="p-4 bg-secondary/30 text-sm text-muted-foreground">
+        <strong className="text-foreground">PV de salle :</strong> coche en temps réel les vérifications du jour (personnel, salle, matériel, documents, procédure). Tu peux générer un PV PDF à signer.
+        {data.roomItems.length === 0 && (
+          <span className="block mt-1 text-destructive">Aucune vérification configurée.</span>
+        )}
+      </Card>
       <Card className="p-4 grid gap-3 md:grid-cols-4">
         <div className="space-y-1.5">
           <Label className="text-xs flex items-center gap-1">
