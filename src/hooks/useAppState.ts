@@ -73,7 +73,7 @@ export function useAppState() {
   useEffect(() => {
     reload();
     const ch = supabase
-      .channel("examtrack-sync")
+      .channel(`examtrack-sync-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "checklist_items" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_records" }, reload)
