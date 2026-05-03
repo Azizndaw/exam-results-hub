@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,32 +26,51 @@ export function DailyChecklist({ state, onChange }: Props) {
   const [newItem, setNewItem] = useState("");
   const [newItemCategory, setNewItemCategory] = useState<ChecklistCategory>("Déroulement");
 
-  const dayRec = state.records[date] || {};
+  // Local state for records of the current date to ensure instant feedback
+  const [localRecords, setLocalRecords] = useState<Record<string, Record<string, boolean>>>({});
+
+  // Sync local records when global state or date changes
+  useEffect(() => {
+    setLocalRecords(state.records[date] || {});
+  }, [state.records, date]);
+
   const stats = getDayStats(state, date);
 
   function toggle(studentId: string, itemId: string) {
-    const current = dayRec[studentId] || {};
-    const next: AppState = {
+    const current = localRecords[studentId] || {};
+    const nextDayRec = {
+      ...localRecords,
+      [studentId]: { ...current, [itemId]: !current[itemId] },
+    };
+
+    // 1. Update local UI immediately
+    setLocalRecords(nextDayRec);
+
+    // 2. Propose update to parent
+    const nextState: AppState = {
       ...state,
       records: {
         ...state.records,
-        [date]: {
-          ...dayRec,
-          [studentId]: { ...current, [itemId]: !current[itemId] },
-        },
+        [date]: nextDayRec,
       },
     };
-    onChange(next);
+    onChange(nextState);
   }
 
   function toggleAllForStudent(studentId: string, value: boolean) {
     const current: Record<string, boolean> = {};
-    state.items.forEach((it) => (current[it.id] = value));
+    if (value) {
+      state.items.forEach((it) => (current[it.id] = true));
+    }
+
+    const nextDayRec = { ...localRecords, [studentId]: current };
+    setLocalRecords(nextDayRec);
+
     onChange({
       ...state,
       records: {
         ...state.records,
-        [date]: { ...dayRec, [studentId]: current },
+        [date]: nextDayRec,
       },
     });
   }
@@ -190,7 +209,7 @@ export function DailyChecklist({ state, onChange }: Props) {
           </thead>
           <tbody>
             {state.students.map((st) => {
-              const rec = dayRec[st.id] || {};
+              const rec = localRecords[st.id] || {};
               const score = state.items.filter((it) => rec[it.id]).length;
               const allChecked = score === state.items.length && state.items.length > 0;
               const orderedItems = CATEGORIES.flatMap((cat) =>
@@ -209,11 +228,10 @@ export function DailyChecklist({ state, onChange }: Props) {
                       <td key={it.id} className={`px-2 py-2 text-center ${newCat ? "border-l" : ""}`}>
                         <button
                           onClick={() => toggle(st.id, it.id)}
-                          className={`h-7 w-7 rounded-md border transition-colors inline-flex items-center justify-center ${
-                            rec[it.id]
+                          className={`h-7 w-7 rounded-md border transition-colors inline-flex items-center justify-center ${rec[it.id]
                               ? "bg-success text-success-foreground border-success"
                               : "bg-background hover:bg-secondary"
-                          }`}
+                            }`}
                           aria-label={`${it.label} pour ${st.fullName}`}
                         >
                           {rec[it.id] ? "✓" : ""}

@@ -41,6 +41,7 @@ export interface RoomChecklistRecord {
   roomLabel: string;
   checks: Record<string, boolean>;
   notes: string;
+  validated: boolean;
 }
 
 export interface StudentResult {

@@ -5,11 +5,11 @@ import {
   formatDateFR,
   getDayStats,
   getStudentCompletion,
-  getTrackedDates,
   getTrend,
   todayISO,
   type AppState,
 } from "@/lib/checklist";
+import type { ExamData } from "@/hooks/useExamData";
 import { exportDailyPDF } from "@/lib/report";
 import {
   Users,
@@ -18,23 +18,83 @@ import {
   FileText,
   History,
   CalendarCheck,
+  ShieldCheck,
+  Award,
 } from "lucide-react";
 
 interface Props {
   state: AppState;
+  examData: ExamData;
 }
 
-export function Dashboard({ state }: Props) {
+export function Dashboard({ state, examData }: Props) {
   const today = todayISO();
   const todayStats = useMemo(() => getDayStats(state, today), [state, today]);
   const completion = useMemo(() => getStudentCompletion(state), [state]);
-  const trend = useMemo(() => getTrend(state, 14), [state]);
-  const trackedDates = useMemo(() => getTrackedDates(state), [state]);
+  const trend = useMemo(() => getTrend(state), [state]);
+
+  // Tracked dates for history
+  const trackedDates = useMemo(() => {
+    return Object.keys(state.records).sort((a, b) => b.localeCompare(a));
+  }, [state.records]);
+
+  // Jury President Metrics
+  const juryMetrics = useMemo(() => {
+    const totalRooms = examData.roomRecords.length;
+    const validatedRooms = examData.roomRecords.filter(r => r.validated).length;
+    const totalGrades = examData.grades.length;
+    const classesCount = examData.classes.length;
+
+    return {
+      totalRooms,
+      validatedRooms,
+      roomProgress: totalRooms ? Math.round((validatedRooms / totalRooms) * 100) : 0,
+      totalGrades,
+      classesCount
+    };
+  }, [examData]);
 
   const sortedCompletion = [...completion].sort((a, b) => b.rate - a.rate);
 
   return (
     <div className="space-y-6">
+      {/* Jury President Header Section */}
+      <Card className="p-5 bg-primary/5 border-primary/20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <Award className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Espace Président du Jury</h2>
+            <p className="text-sm text-muted-foreground">Vue d'ensemble et supervision de l'examen</p>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground uppercase font-semibold">PV de Salles Validés</div>
+            <div className="text-xl font-bold">{juryMetrics.validatedRooms} / {juryMetrics.totalRooms}</div>
+            <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+              <div className="h-full bg-success transition-all" style={{ width: `${juryMetrics.roomProgress}%` }} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground uppercase font-semibold">Notes Saisies</div>
+            <div className="text-xl font-bold">{juryMetrics.totalGrades}</div>
+            <div className="text-xs text-muted-foreground">Total toutes matières confondues</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground uppercase font-semibold">Classes Suivies</div>
+            <div className="text-xl font-bold">{juryMetrics.classesCount}</div>
+            <div className="text-xs text-muted-foreground">Effectif total: {state.students.length} élèves</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground uppercase font-semibold">Moyenne de Complétion</div>
+            <div className="text-xl font-bold">{todayStats.completionRate}%</div>
+            <div className="text-xs text-muted-foreground">Élèves / Checklist aujourd'hui</div>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           icon={<Users className="h-5 w-5" />}
@@ -62,7 +122,7 @@ export function Dashboard({ state }: Props) {
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center gap-2 font-semibold">
-          <TrendingUp className="h-5 w-5 text-accent" /> Évolution (14 derniers jours)
+          <TrendingUp className="h-5 w-5 text-accent" /> Évolution (Période complète de l'examen)
         </div>
         <TrendChart trend={trend} />
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -180,7 +240,8 @@ function TrendChart({
   const w = 600;
   const h = 160;
   const pad = 24;
-  const stepX = (w - pad * 2) / Math.max(trend.length - 1, 1);
+  const count = Math.max(trend.length - 1, 1);
+  const stepX = (w - pad * 2) / count;
   const toY = (v: number) => h - pad - (v / 100) * (h - pad * 2);
 
   const path = (key: "attendanceRate" | "completionRate") =>
@@ -221,8 +282,10 @@ function TrendChart({
             <circle cx={pad + i * stepX} cy={toY(p.completionRate)} r={3} fill="var(--success)" />
           </g>
         ))}
-        {trend.map((p, i) =>
-          i % 2 === 0 ? (
+        {trend.map((p, i) => {
+          // Show label only if it doesn't overlap too much
+          const showLabel = trend.length < 10 || i % Math.ceil(trend.length / 10) === 0;
+          return showLabel ? (
             <text
               key={p.date}
               x={pad + i * stepX}
@@ -233,8 +296,8 @@ function TrendChart({
             >
               {p.date.slice(5)}
             </text>
-          ) : null,
-        )}
+          ) : null;
+        })}
       </svg>
     </div>
   );

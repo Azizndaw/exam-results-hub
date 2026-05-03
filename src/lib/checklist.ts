@@ -199,13 +199,17 @@ export interface TrendPoint {
   completionRate: number;
 }
 
-export function getTrend(state: AppState, days = 14): TrendPoint[] {
+export function getTrend(state: AppState): TrendPoint[] {
+  const dates = Object.keys(state.records).sort();
+  if (dates.length === 0) return [];
+
   const points: TrendPoint[] = [];
-  const today = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const start = new Date(dates[0]);
+  const end = new Date(); // Range up to today
+
+  // Iterate from start date to today
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = d.toISOString().split("T")[0];
     const s = getDayStats(state, iso);
     points.push({
       date: iso,

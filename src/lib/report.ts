@@ -14,22 +14,77 @@ import type {
   Subject,
 } from "./exam";
 
+function drawHeader(doc: jsPDF) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
+
+  // 1. Senegal Flag (Left)
+  const flagX = 14;
+  const flagY = 10;
+  const flagW = 21;
+  const flagH = 14;
+
+  // Green
+  doc.setFillColor(0, 122, 51);
+  doc.rect(flagX, flagY, flagW / 3, flagH, 'F');
+  // Yellow
+  doc.setFillColor(253, 239, 44);
+  doc.rect(flagX + flagW / 3, flagY, flagW / 3, flagH, 'F');
+  // Red
+  doc.setFillColor(232, 27, 35);
+  doc.rect(flagX + 2 * flagW / 3, flagY, flagW / 3, flagH, 'F');
+
+  // Star placeholder (Green star in the middle of yellow)
+  doc.setTextColor(0, 122, 51);
+  doc.setFontSize(14);
+  doc.text("★", flagX + flagW / 3 + flagW / 6, flagY + flagH / 2 + 2, { align: "center" });
+
+  // 2. Official Text (Center)
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("REPUBLIQUE DU SENEGAL", centerX, 12, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("UN PEUPLE - UN BUT - UNE FOI", centerX, 17, { align: "center" });
+  doc.text("MINISTERE DE L'EDUCATION NATIONALE", centerX, 22, { align: "center" });
+  doc.text("INSPECTION D'ACADEMIE DE DAKAR", centerX, 27, { align: "center" });
+  doc.text("IEF DES ALMADIES", centerX, 32, { align: "center" });
+
+  // 3. School Name (Bottom of header)
+  doc.setFontSize(12);
+  doc.text("GROUPE SCOLAIRE D'EXCELLENCE SENEQUE - ECOLE PRIVÉE LAÏQUE DAKAR LEADERS SCHOOL", centerX, 42, { align: "center" });
+
+  // Divider
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(14, 45, pageWidth - 14, 45);
+
+  return 48; // Returns the final Y position of the header
+}
+
 export function exportDailyPDF(state: AppState, date: string) {
   const doc = new jsPDF({ orientation: "landscape" });
+  const startY = drawHeader(doc);
+
   const stats = getDayStats(state, date);
   const dayRec = state.records[date] || {};
 
-  doc.setFontSize(18);
-  doc.text("ExamTrack — Rapport journalier", 14, 16);
-  doc.setFontSize(11);
-  doc.text(`Date : ${formatDateFR(date)}`, 14, 24);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("ExamTrack — Rapport journalier", 14, startY + 6);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Date : ${formatDateFR(date)}`, 14, startY + 12);
   doc.text(
     `Effectif : ${stats.studentCount}  |  Présents : ${stats.presentCount}  |  Présence : ${stats.attendanceRate}%  |  Complétion : ${stats.completionRate}%`,
     14,
-    30,
+    startY + 18,
   );
 
-  let cursorY = 36;
+  let cursorY = startY + 24;
 
   CATEGORIES.forEach((cat) => {
     const items = state.items.filter((i) => i.category === cat);
@@ -83,14 +138,18 @@ interface SessionPDFArgs {
 
 export function exportSessionPDF({ session, className, subjects, results, grades }: SessionPDFArgs) {
   const doc = new jsPDF({ orientation: "landscape" });
+  const startY = drawHeader(doc);
 
-  doc.setFontSize(18);
-  doc.text("ExamTrack — Procès-verbal de délibération", 14, 16);
-  doc.setFontSize(11);
-  doc.text(`Session : ${session.name}`, 14, 24);
-  doc.text(`Date : ${formatDateFR(session.sessionDate)}    Classe : ${className}`, 14, 30);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("ExamTrack — Procès-verbal de délibération", 14, startY + 6);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Session : ${session.name}`, 14, startY + 12);
+  doc.text(`Date : ${formatDateFR(session.sessionDate)}    Classe : ${className}`, 14, startY + 18);
   const totalCoefMax = subjects.reduce((s, x) => s + x.coefficient, 0);
-  doc.text(`Matières : ${subjects.length}    Total coefficients : ${totalCoefMax}    Notation : /20`, 14, 36);
+  doc.text(`Matières : ${subjects.length}    Total coefficients : ${totalCoefMax}    Notation : /20`, 14, startY + 24);
 
   const head = [[
     "Rang", "Élève",
@@ -129,7 +188,7 @@ export function exportSessionPDF({ session, className, subjects, results, grades
   const moyColIndex = head[0].length - 3;
 
   autoTable(doc, {
-    startY: 42,
+    startY: startY + 28,
     head, body,
     headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
     styles: { fontSize: 8, halign: "center", cellPadding: 1.5 },
@@ -265,20 +324,25 @@ export function exportRoomChecklistPDF({
   date, className, roomLabel, items, checks, notes,
 }: RoomChecklistPDFArgs) {
   const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("ExamTrack — PV de salle", 14, 16);
-  doc.setFontSize(11);
-  doc.text(`Date : ${formatDateFR(date)}`, 14, 24);
-  doc.text(`Classe : ${className}    Salle : ${roomLabel}`, 14, 30);
+  const startY = drawHeader(doc);
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("ExamTrack — PV de salle", 14, startY + 6);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Date : ${formatDateFR(date)}`, 14, startY + 12);
+  doc.text(`Classe : ${className}    Salle : ${roomLabel}`, 14, startY + 18);
 
   const checkedCount = items.filter((i) => checks[i.id]).length;
   doc.text(
     `Vérifications : ${checkedCount}/${items.length} (${items.length ? Math.round((checkedCount / items.length) * 100) : 0}%)`,
-    14, 36,
+    14, startY + 24,
   );
 
   const cats = Array.from(new Set(items.map((i) => i.category)));
-  let cursorY = 42;
+  let cursorY = startY + 30;
   cats.forEach((cat) => {
     const list = items.filter((i) => i.category === cat);
     if (list.length === 0) return;

@@ -99,7 +99,7 @@ function Index() {
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-6">
-        {tab === "dashboard" && <Dashboard state={state} />}
+        {tab === "dashboard" && <Dashboard state={state} examData={examData} />}
         {tab === "students" && (
           <StudentsManager
             students={state.students}
@@ -127,11 +127,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-        active
+      className={`px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${active
           ? "bg-card text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground"
-      }`}
+        }`}
     >
       {children}
     </button>
