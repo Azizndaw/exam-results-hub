@@ -38,8 +38,11 @@ export function GradesManager({ students }: Props) {
   );
   const activeSession = data.sessions.find((s) => s.id === sessionId) || null;
   const classStudents = useMemo(
-    () => students.filter((s) => (s as any).classId === classId || (activeClass && (s as any).classId == null && !classId)),
-    [students, classId, activeClass],
+    () =>
+      students
+        .filter((s) => activeClass && (s as any).classId === activeClass.id)
+        .sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "")),
+    [students, activeClass],
   );
 
   const grades = useMemo(
