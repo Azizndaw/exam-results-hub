@@ -85,15 +85,17 @@ export function exportSessionPDF({ session, className, subjects, results, grades
   const doc = new jsPDF({ orientation: "landscape" });
 
   doc.setFontSize(18);
-  doc.text("ExamTrack — Relevé de notes", 14, 16);
+  doc.text("ExamTrack — Procès-verbal de délibération", 14, 16);
   doc.setFontSize(11);
   doc.text(`Session : ${session.name}`, 14, 24);
   doc.text(`Date : ${formatDateFR(session.sessionDate)}    Classe : ${className}`, 14, 30);
+  const totalCoefMax = subjects.reduce((s, x) => s + x.coefficient, 0);
+  doc.text(`Matières : ${subjects.length}    Total coefficients : ${totalCoefMax}    Notation : /20`, 14, 36);
 
   const head = [[
     "Rang", "Élève",
     ...subjects.map((s) => `${s.label}\n(coef ${s.coefficient})`),
-    "Moy. /20", "Mention",
+    "Total", "Coef", "Moy. /20", "Mention", "Décision",
   ]];
 
   const sortedResults = [...results].sort((a, b) => {
@@ -103,44 +105,151 @@ export function exportSessionPDF({ session, className, subjects, results, grades
     return a.rank - b.rank;
   });
 
-  const body = sortedResults.map((r) => {
-    const cells = subjects.map((sub) => {
+  const decision = (avg: number, filled: number) => {
+    if (filled === 0) return "Non noté";
+    if (avg >= 10) return "Admis";
+    if (avg >= 8) return "Repêchable";
+    return "Ajourné";
+  };
+
+  const body = sortedResults.map((r) => [
+    r.rank > 0 ? String(r.rank) : "—",
+    r.studentName,
+    ...subjects.map((sub) => {
       const g = grades.find((x) => x.studentId === r.studentId && x.subjectId === sub.id);
       return g?.score == null ? "—" : Number(g.score).toFixed(2);
-    });
-    return [
-      r.rank > 0 ? String(r.rank) : "—",
-      r.studentName,
-      ...cells,
-      r.filled ? r.average.toFixed(2) : "—",
-      r.mention,
-    ];
-  });
+    }),
+    r.filled ? r.total.toFixed(2) : "—",
+    r.filled ? String(r.totalCoef) : "—",
+    r.filled ? r.average.toFixed(2) : "—",
+    r.mention,
+    decision(r.average, r.filled),
+  ]);
+
+  const moyColIndex = head[0].length - 3;
 
   autoTable(doc, {
-    startY: 36,
+    startY: 42,
     head, body,
     headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
     styles: { fontSize: 8, halign: "center", cellPadding: 1.5 },
     columnStyles: { 0: { halign: "center" }, 1: { halign: "left" } },
+    didParseCell: (d) => {
+      if (d.section === "body" && d.column.index === moyColIndex) {
+        const v = parseFloat(d.cell.raw as string);
+        if (!Number.isNaN(v)) {
+          d.cell.styles.fontStyle = "bold";
+          d.cell.styles.textColor = v >= 10 ? [22, 101, 52] : [153, 27, 27];
+        }
+      }
+    },
   });
 
-  // class statistics
   const filled = results.filter((r) => r.filled > 0);
-  const classAvg = filled.length
-    ? (filled.reduce((s, r) => s + r.average, 0) / filled.length).toFixed(2)
-    : "—";
-  const passRate = filled.length
-    ? Math.round((filled.filter((r) => r.average >= 10).length / filled.length) * 100)
-    : 0;
-  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-  doc.setFontSize(10);
-  doc.text(
-    `Moyenne générale de la classe : ${classAvg}/20    Taux de réussite (≥10) : ${passRate}%    Effectif noté : ${filled.length}/${results.length}`,
-    14, finalY,
-  );
+  const classAvg = filled.length ? filled.reduce((s, r) => s + r.average, 0) / filled.length : 0;
+  const passCount = filled.filter((r) => r.average >= 10).length;
+  const passRate = filled.length ? Math.round((passCount / filled.length) * 100) : 0;
+  const minAvg = filled.length ? Math.min(...filled.map((r) => r.average)) : 0;
+  const maxAvg = filled.length ? Math.max(...filled.map((r) => r.average)) : 0;
 
-  doc.save(`Releve_${session.name.replace(/\s+/g, "_")}_${session.sessionDate}.pdf`);
+  let cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  if (cursorY > 170) { doc.addPage(); cursorY = 20; }
+
+  doc.setFontSize(12);
+  doc.setTextColor(30, 58, 95);
+  doc.text("Statistiques par matière", 14, cursorY);
+  doc.setTextColor(0, 0, 0);
+
+  const subjectStats = subjects.map((sub) => {
+    const scores = grades
+      .filter((g) => g.subjectId === sub.id && g.score != null)
+      .map((g) => Number(g.score));
+    const noted = scores.length;
+    const avg = noted ? scores.reduce((a, b) => a + b, 0) / noted : 0;
+    const mn = noted ? Math.min(...scores) : 0;
+    const mx = noted ? Math.max(...scores) : 0;
+    const pass = scores.filter((s) => s >= 10).length;
+    return [
+      sub.label,
+      String(sub.coefficient),
+      `${noted}/${results.length}`,
+      noted ? avg.toFixed(2) : "—",
+      noted ? mn.toFixed(2) : "—",
+      noted ? mx.toFixed(2) : "—",
+      noted ? `${pass} (${Math.round((pass / noted) * 100)}%)` : "—",
+    ];
+  });
+
+  autoTable(doc, {
+    startY: cursorY + 3,
+    head: [["Matière", "Coef", "Notés", "Moy.", "Min", "Max", "Réussite (≥10)"]],
+    body: subjectStats,
+    headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 1.5 },
+    columnStyles: { 0: { halign: "left" } },
+  });
+
+  cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  if (cursorY > 160) { doc.addPage(); cursorY = 20; }
+
+  const mentions = ["Très Bien", "Bien", "Assez Bien", "Passable", "Insuffisant"];
+  const mentionRows = mentions.map((m) => {
+    const n = filled.filter((r) => r.mention === m).length;
+    const pct = filled.length ? Math.round((n / filled.length) * 100) : 0;
+    return [m, String(n), `${pct}%`];
+  });
+
+  doc.setFontSize(12);
+  doc.setTextColor(30, 58, 95);
+  doc.text("Répartition des mentions", 14, cursorY);
+  doc.setTextColor(0, 0, 0);
+  autoTable(doc, {
+    startY: cursorY + 3,
+    head: [["Mention", "Nombre", "Pourcentage"]],
+    body: mentionRows,
+    headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 1.5 },
+    columnStyles: { 0: { halign: "left" } },
+    tableWidth: 100,
+  });
+
+  cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  if (cursorY > 150) { doc.addPage(); cursorY = 20; }
+
+  doc.setFontSize(12);
+  doc.setTextColor(30, 58, 95);
+  doc.text("Synthèse de la classe", 14, cursorY);
+  doc.setTextColor(0, 0, 0);
+
+  const top3 = sortedResults.filter((r) => r.filled > 0).slice(0, 3);
+  const synthRows: string[][] = [
+    ["Effectif total", String(results.length)],
+    ["Élèves notés", `${filled.length}/${results.length}`],
+    ["Moyenne générale de la classe", `${classAvg.toFixed(2)} / 20`],
+    ["Moyenne la plus haute", maxAvg.toFixed(2)],
+    ["Moyenne la plus basse", minAvg.toFixed(2)],
+    ["Admis (≥ 10)", `${passCount} (${passRate}%)`],
+    ["Ajournés (< 10)", `${filled.length - passCount} (${filled.length ? 100 - passRate : 0}%)`],
+    ...top3.map((r, i) => [`Major ${i + 1}`, `${r.studentName} — ${r.average.toFixed(2)}/20`]),
+  ];
+
+  autoTable(doc, {
+    startY: cursorY + 3,
+    body: synthRows,
+    styles: { fontSize: 9, cellPadding: 2 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 80 } },
+    theme: "grid",
+  });
+
+  cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+  if (cursorY > 180) { doc.addPage(); cursorY = 30; }
+
+  doc.setFontSize(10);
+  doc.text("Le Président du jury : ____________________", 14, cursorY);
+  doc.text("Le Secrétaire : ____________________", 110, cursorY);
+  doc.text("Le Chef d'établissement : ____________________", 200, cursorY);
+
+  doc.save(`Deliberation_${session.name.replace(/\s+/g, "_")}_${session.sessionDate}.pdf`);
 }
 
 interface RoomChecklistPDFArgs {
