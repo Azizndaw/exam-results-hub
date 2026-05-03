@@ -95,16 +95,18 @@ export function StudentsManager({ students, classes, onChange }: Props) {
         </div>
       </Card>
 
-      <div>
-        <div className="flex items-center gap-2 mb-3 text-foreground font-semibold">
-          <Users className="h-5 w-5 text-accent" />
-          Élèves enregistrés ({students.length})
-        </div>
-        {students.length === 0 ? (
-          <Card className="p-8 text-center text-sm text-muted-foreground">
-            Aucun élève enregistré pour le moment.
-          </Card>
-        ) : (
+      {(() => {
+        const groups = new Map<string, Student[]>();
+        const unassigned: Student[] = [];
+        students.forEach((s) => {
+          if (!s.classId) { unassigned.push(s); return; }
+          const arr = groups.get(s.classId) ?? [];
+          arr.push(s);
+          groups.set(s.classId, arr);
+        });
+        const orderedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+
+        const renderTable = (list: Student[]) => (
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
@@ -118,57 +120,28 @@ export function StudentsManager({ students, classes, onChange }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {students.map((s) => (
+                {list.map((s) => (
                   <tr key={s.id} className="border-t">
                     <td className="px-2 py-1">
-                      <Input
-                        value={s.fullName}
-                        onChange={(e) => updateStudent(s.id, { fullName: e.target.value })}
-                        className="h-8 border-transparent hover:border-input"
-                      />
+                      <Input value={s.fullName} onChange={(e) => updateStudent(s.id, { fullName: e.target.value })} className="h-8 border-transparent hover:border-input" />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        type="date"
-                        value={s.birthDate}
-                        onChange={(e) => updateStudent(s.id, { birthDate: e.target.value })}
-                        className="h-8 border-transparent hover:border-input"
-                      />
+                      <Input type="date" value={s.birthDate} onChange={(e) => updateStudent(s.id, { birthDate: e.target.value })} className="h-8 border-transparent hover:border-input" />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        value={s.birthPlace}
-                        onChange={(e) => updateStudent(s.id, { birthPlace: e.target.value })}
-                        className="h-8 border-transparent hover:border-input"
-                      />
+                      <Input value={s.birthPlace} onChange={(e) => updateStudent(s.id, { birthPlace: e.target.value })} className="h-8 border-transparent hover:border-input" />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        value={s.school}
-                        onChange={(e) => updateStudent(s.id, { school: e.target.value })}
-                        className="h-8 border-transparent hover:border-input"
-                      />
+                      <Input value={s.school} onChange={(e) => updateStudent(s.id, { school: e.target.value })} className="h-8 border-transparent hover:border-input" />
                     </td>
                     <td className="px-2 py-1">
-                      <select
-                        value={s.classId ?? ""}
-                        onChange={(e) => updateStudent(s.id, { classId: e.target.value || null })}
-                        className="h-8 w-full rounded-md border bg-background px-2 text-sm"
-                        title={classLabel(s.classId)}
-                      >
+                      <select value={s.classId ?? ""} onChange={(e) => updateStudent(s.id, { classId: e.target.value || null })} className="h-8 w-full rounded-md border bg-background px-2 text-sm" title={classLabel(s.classId)}>
                         <option value="">—</option>
-                        {classes.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
+                        {classes.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                       </select>
                     </td>
                     <td className="px-2 py-1 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeStudent(s.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removeStudent(s.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </td>
@@ -177,8 +150,46 @@ export function StudentsManager({ students, classes, onChange }: Props) {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        );
+
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-foreground font-semibold">
+              <Users className="h-5 w-5 text-accent" />
+              Élèves enregistrés ({students.length})
+            </div>
+            {students.length === 0 && (
+              <Card className="p-8 text-center text-sm text-muted-foreground">
+                Aucun élève enregistré pour le moment.
+              </Card>
+            )}
+            {orderedClasses.map((c) => {
+              const list = groups.get(c.id) ?? [];
+              return (
+                <div key={c.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">
+                      {c.name} <span className="text-muted-foreground font-normal">· {c.level}</span>
+                    </h3>
+                    <span className="text-xs text-muted-foreground">{list.length} élève(s)</span>
+                  </div>
+                  {list.length === 0 ? (
+                    <Card className="p-4 text-center text-xs text-muted-foreground">
+                      Aucun élève dans cette classe.
+                    </Card>
+                  ) : renderTable(list)}
+                </div>
+              );
+            })}
+            {unassigned.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Sans classe ({unassigned.length})</h3>
+                {renderTable(unassigned)}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
