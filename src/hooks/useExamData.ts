@@ -69,7 +69,7 @@ export function useExamData() {
   useEffect(() => {
     reload();
     const ch = supabase
-      .channel("exam-sync")
+      .channel(`exam-sync-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "classes" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "subjects" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "exam_sessions" }, reload)
